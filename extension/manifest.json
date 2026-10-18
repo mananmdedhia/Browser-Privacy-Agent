@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "PrivyLens",
+  "version": "0.1.0",
+  "description": "Hide names, emails, phone numbers and IDs on your own computer before you paste text into AI tools.",
+  "action": { "default_popup": "popup.html" },
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["http://127.0.0.1:8000/*"]
+}

@@ -1,0 +1,24 @@
+:root { --bg: #fff; --fg: #1d2733; --muted: #5d6b7a; --line: #d5dce4; --accent: #1f6feb; --bad: #b42318; --warn: #b54708; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161b22; --fg: #e6edf3; --muted: #8b98a8; --line: #30363d; --accent: #58a6ff; --bad: #ff7b72; --warn: #e3b341; }
+}
+body { width: 420px; margin: 0; padding: 14px 16px 18px; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, sans-serif; }
+h1 { font-size: 17px; margin: 0 0 10px; }
+h1 small { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; }
+label { display: block; font-weight: 600; margin: 12px 0 4px; }
+.hint { font-weight: 400; color: var(--muted); font-size: 12px; }
+textarea, .box { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font: inherit; resize: vertical; }
+.box { white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+.row { display: flex; gap: 8px; margin-top: 8px; }
+button { padding: 7px 12px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; margin-top: 8px; }
+.row button { margin-top: 0; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.ghost { color: var(--muted); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.banner { margin: 8px 0 0; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--line); font-size: 13px; }
+.banner.error { color: var(--bad); border-color: var(--bad); }
+.banner.warn { color: var(--warn); border-color: var(--warn); }
+.hl { border-radius: 3px; padding: 0 2px; cursor: pointer; background: hsl(var(--h) 80% 85%); color: #1d2733; }
+.hl.flagged { outline: 2px dashed var(--warn); outline-offset: 1px; }
+.hl.off { background: transparent; text-decoration: line-through; color: var(--muted); outline: 1px dotted var(--muted); }
+.hl small { font-size: 10px; opacity: .7; margin-left: 3px; }

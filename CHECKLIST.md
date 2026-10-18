@@ -64,7 +64,7 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [x] `engine/export_onnx.py` 🖥️
 
 ## 9. Demo (Week 9)
-- [ ] Extension: `manifest.json`, `content.js`, popup, `review.js` (or plain web page fallback) 🖥️
+- [x] Extension: `manifest.json`, `content.js`, popup, `review.js` (or plain web page fallback) 🖥️
 
 ## 10. Wrap-up (Week 10)
 - [ ] `evaluation/attention_viz.py` + attention notebook 🖥️

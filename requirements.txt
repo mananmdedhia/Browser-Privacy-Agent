@@ -2,7 +2,6 @@ torch
 numpy
 faker
 datasets
-seqeval
 scikit-learn
 matplotlib
 pytest

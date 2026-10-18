@@ -1,0 +1,14 @@
+torch
+numpy
+faker
+datasets
+seqeval
+scikit-learn
+matplotlib
+pytest
+pyyaml
+transformers  # DistilBERT reference only
+fastapi
+uvicorn
+onnx
+onnxruntime

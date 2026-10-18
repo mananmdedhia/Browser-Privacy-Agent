@@ -50,7 +50,7 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [ ] (optional) copy/pointer mechanism ☁️
 
 ## 7. DistilBERT reference + ablations (Week 7)
-- [ ] `models/distilbert_tagger.py` + `training/train_distilbert.py` ☁️
+- [x] `training/train_distilbert.py` written + tested (model wrapper lives in it); [ ] Colab run ☁️
 - [ ] Ablations: layers 2/4, heads 2/4/8, pos-enc, vocab size, CRF ☁️
 - [ ] `evaluation/run_benchmark.py` — all approaches → results table 🖥️
 - [ ] `evaluation/latency.py` + params/size 🖥️

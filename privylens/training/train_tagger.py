@@ -106,5 +106,9 @@ if __name__ == "__main__":
 
     if not a.limit:                                   # final exam with the best checkpoint
         best_model = load_tagger(a.out, dev)
+        final = {}
         for split in ("test", "test_unseen_templates"):
-            report(f"tagger / {split}", evaluate(lambda t: predict(best_model, tok, t, device=dev), read(split)))
+            final[split] = evaluate(lambda t: predict(best_model, tok, t, device=dev), read(split))
+            report(f"tagger / {split}", final[split])
+        json.dump({"args": vars(a), "params": sum(x.numel() for x in best_model.parameters()), **final},
+                  open(a.out + ".test.json", "w"))     # saved so ablation runs can be compared in one table

@@ -51,4 +51,10 @@ def predict(model, tok, text, window=128, device="cpu"):
         p = model(chunk).softmax(-1)[0].cpu()
         probs[s:s + len(p)] += p
         seen[s:s + len(p)] += 1
-    return to_spans(offs, (probs / seen).argmax(-1).tolist())
+    probs = probs / seen
+    spans = to_spans(offs, probs.argmax(-1).tolist())
+    conf = probs.max(-1).values                       # how sure the model was about each token
+    for s in spans:                                   # span confidence = its least-sure token (flagging uses this)
+        inside = [c.item() for (a, b), c in zip(offs, conf) if a >= s["start"] and b <= s["end"]]
+        s["conf"] = min(inside) if inside else 0.0
+    return spans

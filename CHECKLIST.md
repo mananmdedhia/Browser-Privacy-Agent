@@ -56,12 +56,12 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [ ] `evaluation/latency.py` + params/size 🖥️
 
 ## 8. Hybrid engine + API (Week 8)
-- [ ] `engine/merger.py` 🖥️
-- [ ] `engine/vault.py` (numbered, consistent placeholders) 🖥️
-- [ ] `engine/validator.py` 🖥️
-- [ ] `engine/pipeline.py` + `tests/test_engine.py` (no known PII survives) 🖥️
-- [ ] `api/server.py` — `/sanitise`, `/restore` 🖥️
-- [ ] `engine/export_onnx.py` 🖥️
+- [x] merger (inside engine/pipeline.py) 🖥️
+- [x] vault + numbered placeholders (inside pipeline.py) (numbered, consistent placeholders) 🖥️
+- [x] validator (inside pipeline.py) 🖥️
+- [x] `engine/pipeline.py` + `tests/test_engine.py` (no known PII survives) 🖥️
+- [x] `api/server.py` — `/sanitise`, `/restore` 🖥️
+- [x] `engine/export_onnx.py` 🖥️
 
 ## 9. Demo (Week 9)
 - [ ] Extension: `manifest.json`, `content.js`, popup, `review.js` (or plain web page fallback) 🖥️

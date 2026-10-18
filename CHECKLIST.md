@@ -42,11 +42,11 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [ ] (optional) CRF layer ☁️
 
 ## 6. Encoder-decoder seq2seq (Week 6)
-- [ ] `data/seq2seq_pairs.py` 🖥️
-- [ ] `layers/decoder_block.py` (masked self-attn + cross-attn) 🖥️
-- [ ] `models/seq2seq.py` — teacher forcing, greedy decode (beam as ablation) 🖥️
-- [ ] `training/train_seq2seq.py` + full run ☁️
-- [ ] `evaluation/preservation.py` + failure-mode error analysis 🖥️
+- [x] `data/seq2seq_pairs.py` 🖥️
+- [x] decoder block (in layers.py) (masked self-attn + cross-attn) 🖥️
+- [x] `models/seq2seq.py` — teacher forcing, greedy decode (beam as ablation) 🖥️
+- [x] `training/train_seq2seq.py` written + overfit-checked; [ ] full Colab run ☁️
+- [x] `evaluation/preservation.py` written; [ ] error analysis after Colab run + failure-mode error analysis 🖥️
 - [ ] (optional) copy/pointer mechanism ☁️
 
 ## 7. DistilBERT reference + ablations (Week 7)

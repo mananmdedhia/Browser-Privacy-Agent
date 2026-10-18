@@ -107,3 +107,21 @@ class EncoderBlock(nn.Module):
     def forward(self, x, mask=None):
         x = self.n1(x + self.drop(self.attn(x, mask=mask)))
         return self.n2(x + self.drop(self.ff(x)))
+
+
+class DecoderBlock(nn.Module):
+    """The decoder writes the output one token at a time. Each block has three steps:
+    1. masked self-attention: look at what has been written so far (never the future)
+    2. cross-attention: look at the encoder's reading of the input sentence
+    3. feed-forward
+    each wrapped in residual + LayerNorm."""
+    def __init__(self, d, heads, d_ff, dropout=0.1):
+        super().__init__()
+        self.self_attn, self.cross_attn = MultiHeadAttention(d, heads, dropout), MultiHeadAttention(d, heads, dropout)
+        self.ff = FeedForward(d, d_ff, dropout)
+        self.n1, self.n2, self.n3, self.drop = nn.LayerNorm(d), nn.LayerNorm(d), nn.LayerNorm(d), nn.Dropout(dropout)
+
+    def forward(self, x, enc, self_mask=None, cross_mask=None):
+        x = self.n1(x + self.drop(self.self_attn(x, mask=self_mask)))
+        x = self.n2(x + self.drop(self.cross_attn(x, kv=enc, mask=cross_mask)))
+        return self.n3(x + self.drop(self.ff(x)))

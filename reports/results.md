@@ -15,8 +15,11 @@ Data: ai4privacy (English) + our synthetic Indian data. See `CHECKLIST.md` for h
 | **Encoder tagger, 4 layers + case augmentation** | 1.56M | unseen templates | 0.776 | 0.798 | **0.787** | 7.7% | 4.3% | 2.34% |
 | DistilBERT (pretrained, fine-tuned 4 epochs) | 65.2M (~261 MB) | test | 0.947 | 0.966 | **0.956** | 2.3% | 1.9% | 0.40% |
 | DistilBERT | 65.2M | unseen templates | 0.925 | 0.960 | **0.942** | 0.4% | 0.1% | 1.07% |
-| **Hybrid engine** (regex + 2-layer tagger, merged, spans snapped to whole words) | 1.29M | test | 0.875 | 0.935 | **0.904** | 3.7% | 2.1% | 1.20% |
-| **Hybrid engine** (same) | 1.29M | unseen templates | 0.776 | 0.872 | **0.821** | 8.5% | 3.8% | 2.76% |
+| **HYBRID ENGINE, PRODUCTION** (regex + 4-layer case-augmented tagger, snapped to whole words) | 1.56M | test | 0.915 | 0.952 | **0.933** | **2.8%** | 2.1% | 0.96% |
+| **HYBRID ENGINE, PRODUCTION** | 1.56M | unseen templates | 0.876 | 0.882 | **0.879** | **5.4%** | 3.1% | 1.32% |
+| **HYBRID ENGINE, PRODUCTION** | 1.56M | all-caps / lowercase (`test_caps`) | 0.893 | 0.920 | **0.906** | **4.9%** | 3.6% | 1.02% |
+| Hybrid engine (older: regex + 2-layer tagger, snapped to whole words) | 1.29M | test | 0.875 | 0.935 | **0.904** | 3.7% | 2.1% | 1.20% |
+| Hybrid engine (older, same) | 1.29M | unseen templates | 0.776 | 0.872 | **0.821** | 8.5% | 3.8% | 2.76% |
 
 Reading it: our 1.29M-parameter model is 50x smaller than DistilBERT. It trails by about 10 F1 points on `test`
 and about 22 on unseen templates, but beats regex by a wide margin on both.
@@ -113,6 +116,19 @@ Word snapping alone, on the old model and the normal test sets: hybrid test F1 0
 unseen F1 0.733 -> 0.821, left visible 15.7% -> 8.5%. Half-word fragments were a large share of all errors.
 Still open: lowercase PAN is missed by regex (case-sensitive pattern).
 
+## Production engine: spot checks on realistic inputs (not a benchmark)
+
+Fixed: `MANAN MIHIR RAYCHAND DEDHIA` -> `[PERSON_1]`; `Name: MANAN ..., DOB 12/03/2001` -> `Name: [PERSON_1], DOB [DATE_1]`;
+`Send the report to Rahul Sharma at rahul@example.com. His employee ID is EMP4821.` -> all three values hidden.
+Still wrong (be ready to show these honestly):
+- Lowercase place names are missed: `...in mumbai` stays visible (a leak).
+- A common word is sometimes tagged as a person or place: `Mail me at` -> `[PERSON_1] me`, `His PAN` -> `[LOCATION_1] PAN`,
+  `my aadhar` -> `[PERSON_1]` (over-redaction, not a leak).
+- `Infosys` (organisation) was missed in one sentence even though ORGANIZATION scores 0.99 on the template-heavy test set:
+  that score mostly measures template familiarity (see notes below).
+- The 12-digit Aadhaar number is hidden but labelled `[ID_NUMBER_1]`, because the model's label outranks loose regex.
+ONNX re-exported for the production model (max difference from PyTorch 9.7e-06).
+
 ## Hybrid engine notes
 
 - Merge rule: precise regex (email, URL, IP, PAN) > neural tagger > loose regex (phone, Aadhaar, date, ID, kept only
@@ -133,4 +149,4 @@ Still open: lowercase PAN is missed by regex (case-sensitive pattern).
 - Unseen-template EMAIL is weak for both neural models (0.58 tagger, 0.73 DistilBERT) while regex scores 1.00:
   the case for the hybrid engine (Section 8).
 - Embedding-init bug fixed before the tagger run (the first run, F1 0.21, had it).
-- Still to run: latency benchmark; hybrid-engine numbers with the 4-layer case-augmented tagger (needs the checkpoint on this laptop); CRF ablation (optional).
+- Still to run: latency benchmark; CRF ablation (optional).

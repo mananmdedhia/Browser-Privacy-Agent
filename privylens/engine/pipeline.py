@@ -101,6 +101,6 @@ if __name__ == "__main__":
     import json
     from privylens.evaluation.metrics import evaluate, report
     eng = Engine.from_checkpoint()
-    for split in ("test", "test_unseen_templates"):
+    for split in ("test", "test_unseen_templates", "test_caps"):
         rows = [json.loads(l) for l in open(f"data/splits/{split}.jsonl", encoding="utf-8")]
         report(f"hybrid (regex + tagger) / {split}", evaluate(eng.detect, rows))

@@ -22,6 +22,11 @@ class Embedding(nn.Module):
         super().__init__()
         self.emb = nn.Embedding(vocab_size, d, padding_idx=pad_id)
         self.scale = math.sqrt(d)               # keeps embeddings comparable in size to positions
+        # small start values (std d^-0.5): after the sqrt(d) scale they are ~1, same size as the position signal.
+        # PyTorch's default (std 1) made tokens ~11x louder than positions and saturated attention.
+        nn.init.normal_(self.emb.weight, std=d ** -0.5)
+        with torch.no_grad():
+            self.emb.weight[pad_id].zero_()
 
     def forward(self, ids):                      # (B,T) -> (B,T,d)
         return self.emb(ids) * self.scale

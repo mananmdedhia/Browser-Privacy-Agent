@@ -84,7 +84,7 @@ if __name__ == "__main__":
                                               else 0.5 * (1 + math.cos(math.pi * (s - warm) / max(1, total - warm))))
 
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
-    best = -1.0
+    best, history = -1.0, []
     for epoch in range(a.epochs):
         model.train()
         losses = []
@@ -100,6 +100,8 @@ if __name__ == "__main__":
         if saved:
             best = f1
             torch.save({"model": model.state_dict(), "config": cfg}, a.out)
+        history.append({"epoch": epoch + 1, "train_loss": sum(losses) / len(losses), "val_f1": f1})
+        json.dump(history, open(a.out + ".history.json", "w"))   # for the loss-curve plot in the presentation
         print(f"epoch {epoch + 1:3d}  train_loss={sum(losses) / len(losses):.4f}  val_F1={f1:.4f}{'  *saved' if saved else ''}")
 
     if not a.limit:                                   # final exam with the best checkpoint

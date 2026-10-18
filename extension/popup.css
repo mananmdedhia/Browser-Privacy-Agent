@@ -22,3 +22,5 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hl.flagged { outline: 2px dashed var(--warn); outline-offset: 1px; }
 .hl.off { background: transparent; text-decoration: line-through; color: var(--muted); outline: 1px dotted var(--muted); }
 .hl small { font-size: 10px; opacity: .7; margin-left: 3px; }
+.switch { display: flex; gap: 8px; align-items: baseline; font-weight: 500; margin: 0 0 6px; }
+.switch .hint { display: block; }

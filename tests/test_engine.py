@@ -1,7 +1,7 @@
 import json
 import os
 import pytest
-from privylens.engine.pipeline import Engine, merge
+from privylens.engine.pipeline import Engine, merge, snap
 
 TEXT = "Send the report to Rahul Sharma at rahul@example.com. Rahul Sharma will call +91 98765 43210."
 
@@ -65,3 +65,11 @@ def test_no_known_pii_survives_with_real_model():
             leaked += r["text"][s["start"]:s["end"]] in out
     print(f"leaked {leaked}/{total}")
     assert leaked / total < 0.06          # tagger alone leaked 5.7% of spans; the hybrid must not be worse
+
+
+def test_snap_never_leaves_half_a_word():
+    text = "MANAN MIHIR DEDHIA"
+    half = [{"start": 6, "end": 9, "label": "LOCATION"}]                      # model found only "MIH"
+    assert [(s["start"], s["end"]) for s in snap(text, half)] == [(6, 11)]      # widened to "MIHIR"
+    eng = Engine(lambda t: [{"start": 6, "end": 9, "label": "PERSON", "conf": 0.5}])
+    assert eng.sanitise(text)["sanitised_text"] == "MANAN [PERSON_1] DEDHIA"

@@ -31,6 +31,7 @@ def load_tagger(path, device="cpu"):
     ck = torch.load(path, map_location=device)   # {"model": weights, "config": constructor args}
     model = EncoderTagger(**ck["config"])
     model.load_state_dict(ck["model"])
+    model.tokenizer_path = ck.get("tokenizer", "tokenizers/bpe_8k.json")   # older checkpoints used the 8k tokenizer
     return model.to(device).eval()
 
 

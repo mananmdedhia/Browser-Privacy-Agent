@@ -1,9 +1,24 @@
 {
   "manifest_version": 3,
   "name": "PrivyLens",
-  "version": "0.1.0",
-  "description": "Hide names, emails, phone numbers and IDs on your own computer before you paste text into AI tools.",
+  "version": "0.2.0",
+  "description": "Hides names, emails, phone numbers and IDs on your own computer before text reaches an AI chat. Paste normally; PrivyLens cleans it first.",
   "action": { "default_popup": "popup.html" },
-  "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["http://127.0.0.1:8000/*"]
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:8000/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://www.perplexity.ai/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

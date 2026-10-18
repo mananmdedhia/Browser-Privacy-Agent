@@ -12,8 +12,20 @@ Try:  python -m privylens.engine.pipeline   (scores the hybrid on the test sets)
 import re
 import uuid
 from privylens.baselines.regex_detector import detect as regex_detect
+from privylens.tokenizer.pretokenize import pretokenize
 
 PLACEHOLDER = re.compile(r"\[[A-Z_]+_\d+\]")
+
+
+def snap(text, spans):
+    """Widen each model span to whole words, so half a word is never left visible ("MIH" found inside "MIHIR").
+    Cheap safety net for the model's fragmented predictions; it can only hide MORE text, never less."""
+    words = [(a, b) for _, a, b in pretokenize(text)]
+    for s in spans:
+        hit = [w for w in words if w[0] < s["end"] and w[1] > s["start"]]
+        if hit:
+            s["start"], s["end"] = min(s["start"], hit[0][0]), max(s["end"], hit[-1][1])
+    return spans
 
 
 STRONG = {"EMAIL", "URL", "IP_ADDRESS", "PAN"}      # formats regex gets (almost) always right
@@ -56,16 +68,17 @@ class Engine:
         self.sessions = {}                                   # session_id -> {placeholder: original}  (memory only, never sent anywhere)
 
     @classmethod
-    def from_checkpoint(cls, tagger_path="checkpoints/tagger.pt", tokenizer_path="tokenizers/bpe_8k.json", **kw):
+    def from_checkpoint(cls, tagger_path="checkpoints/tagger.pt", tokenizer_path=None, **kw):
         from privylens.models.encoder_tagger import load_tagger, predict
         from privylens.tokenizer.bpe import BPE
-        model, tok = load_tagger(tagger_path), BPE.load(tokenizer_path)
+        model = load_tagger(tagger_path)
+        tok = BPE.load(tokenizer_path or model.tokenizer_path)      # the tokenizer this model was trained with
         return cls(lambda t: predict(model, tok, t), **kw)
 
     def detect(self, text):
         found = [{**s, "conf": 1.0, "source": "regex"} for s in regex_detect(text)]
         if self.model_spans:
-            found += [{**s, "source": "model"} for s in self.model_spans(text)]
+            found += [{**s, "source": "model"} for s in snap(text, self.model_spans(text))]
         return merge(found)
 
     def sanitise(self, text, session_id=None):

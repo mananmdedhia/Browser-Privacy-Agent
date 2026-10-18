@@ -5,6 +5,10 @@ Two anti-cheating rules:
     EVERYTHING else, so this set tests sentence shapes the model never saw.
  2. Splitting is by doc_id, so chunks of one document never land in two splits.
 
+Case robustness: real forms and ID cards are often ALL CAPS, but only ~0.5% of our name examples were.
+So AFTER splitting, train gets extra UPPER / lower-case copies (same character offsets, so spans stay valid),
+and a `test_caps` split (upper + lower copies of 1000 test rows) measures the effect. val / test / unseen are untouched.
+
 Run:  python -m privylens.data.splitter
 """
 import json
@@ -38,6 +42,19 @@ def split(rows, seed=0):
     return out, sorted(unseen)
 
 
+def case_variants(rows, p_upper=0.15, p_lower=0.10, seed=1):
+    """Randomly add an UPPERCASE and a lowercase copy of some rows. Uses its own random generator,
+    so the main split above is unchanged. Rows whose length would change are skipped (offsets must stay valid)."""
+    rng = random.Random(seed)
+    out = []
+    for r in rows:
+        for tag, fn, p in (("up", str.upper, p_upper), ("lo", str.lower, p_lower)):
+            t = fn(r["text"])
+            if len(t) == len(r["text"]) and rng.random() < p:
+                out.append({**r, "id": f"{r['id']}_{tag}", "text": t})
+    return out
+
+
 if __name__ == "__main__":
     rows = [json.loads(l) for l in open("data/processed/all.jsonl", encoding="utf-8")]
     parts, unseen = split(rows)
@@ -48,6 +65,10 @@ if __name__ == "__main__":
             assert seen.setdefault(r["doc_id"], name) == name, "doc leaked across splits"
     train_labels = {s["label"] for r in parts["train"] for s in r["spans"]}
     assert train_labels == set(ENTITIES), f"missing from train: {set(ENTITIES) - train_labels}"
+    parts["train"] += case_variants(parts["train"])
+    caps = [{**r, "id": f"{r['id']}_{tag}", "text": fn(r["text"])} for r in parts["test"][:1000]
+            for tag, fn in (("up", str.upper), ("lo", str.lower)) if len(fn(r["text"])) == len(r["text"])]
+    parts["test_caps"] = caps
     for name, rs in parts.items():
         with open(f"data/splits/{name}.jsonl", "w", encoding="utf-8") as f:
             f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rs)

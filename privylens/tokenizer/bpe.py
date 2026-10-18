@@ -4,7 +4,7 @@ Idea: start with single characters; repeatedly merge the most frequent
 neighbouring pair into a new token ("R"+"a" -> "Ra") until the vocab is full.
 Common words become one token, rare strings (IDs, names) split into pieces.
 
-Train:  python -m privylens.tokenizer.bpe 8000     -> tokenizers/bpe_8k.json
+Train:  python -m privylens.tokenizer.bpe 8000 [out.json]   -> tokenizers/bpe_8k.json by default
         (trains on the TRAIN split only)
 """
 import json
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     size = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
     texts = [json.loads(l)["text"] for l in open("data/splits/train.jsonl", encoding="utf-8")]
     tok = BPE.train(texts, size)
-    path = f"tokenizers/bpe_{size // 1000}k.json"
+    path = sys.argv[2] if len(sys.argv) > 2 else f"tokenizers/bpe_{size // 1000}k.json"
     tok.save(path)
     print(f"saved {path}: vocab={len(tok.vocab)}, merges={len(tok.merges)}")
     ids, _ = tok.encode("Send the report to Rahul Sharma at rahul@example.com.")

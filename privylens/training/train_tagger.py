@@ -99,7 +99,7 @@ if __name__ == "__main__":
         saved = f1 > best
         if saved:
             best = f1
-            torch.save({"model": model.state_dict(), "config": cfg}, a.out)
+            torch.save({"model": model.state_dict(), "config": cfg, "tokenizer": a.tokenizer}, a.out)   # remember WHICH tokenizer
         history.append({"epoch": epoch + 1, "train_loss": sum(losses) / len(losses), "val_f1": f1})
         json.dump(history, open(a.out + ".history.json", "w"))   # for the loss-curve plot in the presentation
         print(f"epoch {epoch + 1:3d}  train_loss={sum(losses) / len(losses):.4f}  val_F1={f1:.4f}{'  *saved' if saved else ''}")
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     if not a.limit:                                   # final exam with the best checkpoint
         best_model = load_tagger(a.out, dev)
         final = {}
-        for split in ("test", "test_unseen_templates"):
+        for split in ("test", "test_unseen_templates", "test_caps"):
             final[split] = evaluate(lambda t: predict(best_model, tok, t, device=dev), read(split))
             report(f"tagger / {split}", final[split])
         json.dump({"args": vars(a), "params": sum(x.numel() for x in best_model.parameters()), **final},

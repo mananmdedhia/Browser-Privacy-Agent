@@ -1,5 +1,7 @@
 // PrivyLens popup. Talks only to the engine on THIS computer (127.0.0.1); nothing goes to the internet.
 //
+// This window is the MANUAL mode (select text -> Sanitise). The automatic mode is content.js: it cleans every paste
+// into an AI chat box without opening this window.
 // Use it:  1) start the engine:  python -m uvicorn api.server:app --host 127.0.0.1 --port 8000
 //          2) chrome://extensions -> turn on Developer mode -> Load unpacked -> pick this `extension` folder
 //          3) select text on any page, click the PrivyLens icon, press Sanitise.
@@ -112,5 +114,10 @@ $("restore").onclick = async () => {
 };
 
 $("copyRestored").onclick = () => navigator.clipboard.writeText($("restored").value);
+
+// on/off switch for auto-protect (content.js reads the same setting)
+const hasStorage = typeof chrome !== "undefined" && chrome.storage;
+if (hasStorage) chrome.storage.local.get("enabled", (v) => { $("auto").checked = v.enabled !== false; });
+$("auto").onchange = () => { if (hasStorage) chrome.storage.local.set({ enabled: $("auto").checked }); };
 
 pageSelection().then((t) => { if (t) $("input").value = t; });

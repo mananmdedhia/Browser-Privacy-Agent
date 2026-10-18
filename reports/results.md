@@ -13,8 +13,8 @@ Data: ai4privacy (English) + our synthetic Indian data. See `CHECKLIST.md` for h
 | **Encoder tagger** | 1.29M | unseen templates | 0.674 | 0.768 | **0.718** | 15.4% | 6.3% | 3.19% |
 | DistilBERT (pretrained, fine-tuned 4 epochs) | 65.2M (~261 MB) | test | 0.947 | 0.966 | **0.956** | 2.3% | 1.9% | 0.40% |
 | DistilBERT | 65.2M | unseen templates | 0.925 | 0.960 | **0.942** | 0.4% | 0.1% | 1.07% |
-| **Hybrid engine** (regex + tagger, merged) | 1.29M | test | 0.820 | 0.908 | **0.862** | 5.3% | 2.7% | 1.05% |
-| **Hybrid engine** | 1.29M | unseen templates | 0.677 | 0.798 | **0.733** | 15.7% | 5.9% | 2.35% |
+| **Hybrid engine** (regex + 2-layer tagger, merged, spans snapped to whole words) | 1.29M | test | 0.875 | 0.935 | **0.904** | 3.7% | 2.1% | 1.20% |
+| **Hybrid engine** (same) | 1.29M | unseen templates | 0.776 | 0.872 | **0.821** | 8.5% | 3.8% | 2.76% |
 
 Reading it: our 1.29M-parameter model is 50x smaller than DistilBERT. It trails by about 10 F1 points on `test`
 and about 22 on unseen templates, but beats regex by a wide margin on both.
@@ -86,6 +86,25 @@ Findings
   consistent with learned positions memorising template layouts, while fixed sin/cos generalises.
 - **Vocabulary:** 4k matches 8k on `test` (0.850 vs 0.855) with 40% fewer parameters (the embedding table is most of the model); 16k is worse (rare tokens under-trained).
 - Caveats: single seed, and the unseen set is only 595 rows from 5 templates, so differences of a few points there are within noise. Trust the trends (depth helps, 16k hurts), not the decimals.
+
+## Case robustness (found by a user trying an ALL-CAPS name)
+
+Problem: `MANAN MIHIR RAYCHAND DEDHIA` was not detected. Cause: only 41 of 17,772 PERSON examples in train were
+ALL CAPS and 50 lowercase, so the model had effectively never seen a capitalised name. Fixes:
+1. Training data: random UPPER (15%) and lower (10%) case copies added to train only (val/test/unseen byte-identical,
+   so old and new models stay comparable); tokenizer retrained on it (`tokenizers/bpe_8k_caps.json`).
+2. New split `test_caps`: 1,997 rows = upper- and lower-case copies of 1,000 test rows.
+3. Engine: model spans are widened to whole words (`snap`), so half a word is never left visible.
+
+| Model on `test_caps` (before the retrain) | F1 | Left visible | PERSON recall |
+|---|---|---|---|
+| 2-layer tagger alone | 0.462 | 40.1% | 0.08 |
+| 2-layer hybrid + snap | 0.616 | 27.6% | 0.13 |
+| 4-layer tagger retrained with case augmentation | pending (Colab) | pending | pending |
+
+Word snapping alone, on the old model and the normal test sets: hybrid test F1 0.862 -> 0.904, left visible 5.3% -> 3.7%,
+unseen F1 0.733 -> 0.821, left visible 15.7% -> 8.5%. Half-word fragments were a large share of all errors.
+Still open: lowercase PAN is missed by regex (case-sensitive pattern).
 
 ## Hybrid engine notes
 

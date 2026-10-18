@@ -58,6 +58,29 @@ placeholder / altered ordinary words. Seq2seq: 1.69M params, 15 epochs, greedy d
 - Complete breakdown on unseen sentence shapes: "Witness statement of [ORGANIZATION] of Mangated, dangated."
 - Only 1 in 4 outputs is exactly right, while a tagger cannot alter the text at all.
 
+## Ablations on the encoder tagger (one change at a time)
+
+Baseline = 2 layers, 4 heads, sinusoidal positions, 8k vocab (25 epochs). Every ablation ran 15 epochs, 1 seed each.
+For fairness the baseline's val F1 at epoch 15 was 0.860, so the 15-epoch variants are not meaningfully handicapped.
+
+| Variant | Params | Test F1 | Test leaked | Unseen F1 | Unseen leaked | Val F1 (best) |
+|---|---|---|---|---|---|---|
+| **Baseline** (2L, 4 heads, sin, 8k) | 1.29M | 0.855 | 5.7% | 0.718 | 15.4% | 0.876 |
+| **4 layers** | 1.56M | **0.887** | **4.3%** | **0.797** | **7.0%** | **0.908** |
+| 2 heads | 1.29M | 0.827 | 7.4% | 0.657 | 27.3% | 0.839 |
+| 8 heads | 1.29M | 0.812 | 7.6% | 0.647 | 24.9% | 0.828 |
+| Learned positions | 1.36M | 0.865 | 5.7% | 0.618 | 17.2% | 0.875 |
+| Vocab 4k | 0.78M | 0.850 | 6.6% | 0.682 | 14.1% | 0.854 |
+| Vocab 16k | 2.32M | 0.807 | 7.4% | 0.634 | 22.8% | 0.820 |
+
+Findings
+- **Depth is the biggest win:** 4 layers beat 2 on every number (+3.2 F1 on test, +7.9 on unseen, leakage on unseen 15.4% -> 7.0%) for +20% parameters.
+- **Heads:** 4 is best; both 2 and 8 are worse, mostly on unseen templates (d_model=128: 8 heads leaves only 16 dims per head).
+- **Positions:** learned ~ sinusoidal on `test` (0.865 vs 0.855) but clearly worse on unseen templates (0.618 vs 0.718):
+  consistent with learned positions memorising template layouts, while fixed sin/cos generalises.
+- **Vocabulary:** 4k matches 8k on `test` (0.850 vs 0.855) with 40% fewer parameters (the embedding table is most of the model); 16k is worse (rare tokens under-trained).
+- Caveats: single seed, and the unseen set is only 595 rows from 5 templates, so differences of a few points there are within noise. Trust the trends (depth helps, 16k hurts), not the decimals.
+
 ## Hybrid engine notes
 
 - Merge rule: precise regex (email, URL, IP, PAN) > neural tagger > loose regex (phone, Aadhaar, date, ID, kept only
@@ -78,4 +101,4 @@ placeholder / altered ordinary words. Seq2seq: 1.69M params, 15 epochs, greedy d
 - Unseen-template EMAIL is weak for both neural models (0.58 tagger, 0.73 DistilBERT) while regex scores 1.00:
   the case for the hybrid engine (Section 8).
 - Embedding-init bug fixed before the tagger run (the first run, F1 0.21, had it).
-- Still to run: ablations (layers, heads, position type, vocab size), latency benchmark.
+- Still to run: latency benchmark; hybrid numbers with the 4-layer tagger; CRF ablation (optional).

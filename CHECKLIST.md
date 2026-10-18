@@ -34,9 +34,9 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [x] feedforward + encoder block in layers.py 🖥️
 
 ## 5. Encoder tagger — main model (Week 5)
-- [ ] `models/encoder_tagger.py` 🖥️
-- [ ] `training/losses.py`, `training/schedulers.py` 🖥️
-- [ ] `training/train_tagger.py` — tiny overfit sanity check (10 examples → loss ≈ 0) 🖥️
+- [x] `models/encoder_tagger.py` 🖥️
+- [x] loss + warmup-cosine schedule (inside train_tagger.py, no separate files) 🖥️
+- [x] `training/train_tagger.py` — tiny overfit sanity check (10 examples → loss ≈ 0) 🖥️
 - [ ] Full training run + checkpoint to Drive ☁️
 - [ ] Evaluate vs regex (overall, per-entity, unseen templates) 🖥️
 - [ ] (optional) CRF layer ☁️

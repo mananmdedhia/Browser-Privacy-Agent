@@ -1,12 +1,19 @@
 {
   "manifest_version": 3,
   "name": "PrivyLens",
-  "version": "0.2.0",
-  "description": "Hides names, emails, phone numbers and IDs on your own computer before text reaches an AI chat. Paste normally; PrivyLens cleans it first.",
+  "version": "0.3.0",
+  "description": "Hides names, emails, phone numbers and IDs on your own computer before text reaches an AI chat or any site you choose.",
   "action": { "default_popup": "popup.html" },
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["http://127.0.0.1:8000/*"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
   "background": { "service_worker": "background.js" },
+  "commands": {
+    "sanitise-field": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Sanitise the text box you are in (works on any page)"
+    }
+  },
   "content_scripts": [
     {
       "matches": [
@@ -17,7 +24,7 @@
         "https://copilot.microsoft.com/*",
         "https://www.perplexity.ai/*"
       ],
-      "js": ["content.js"],
+      "js": ["shared.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

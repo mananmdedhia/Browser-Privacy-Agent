@@ -11,6 +11,8 @@ Data: ai4privacy (English) + our synthetic Indian data. See `CHECKLIST.md` for h
 | Regex baseline | - | unseen templates | 1.000 | 0.485 | 0.653 | 51.5% | 46.4% | 0.00% |
 | **Encoder tagger** (from scratch, 25 epochs) | 1.29M | test | 0.815 | 0.899 | **0.855** | 5.7% | 3.0% | 0.77% |
 | **Encoder tagger** | 1.29M | unseen templates | 0.674 | 0.768 | **0.718** | 15.4% | 6.3% | 3.19% |
+| **Encoder tagger, 4 layers + case augmentation** (production candidate, 25 epochs) | 1.56M | test | 0.904 | 0.939 | **0.921** | 3.7% | 2.6% | 0.56% |
+| **Encoder tagger, 4 layers + case augmentation** | 1.56M | unseen templates | 0.776 | 0.798 | **0.787** | 7.7% | 4.3% | 2.34% |
 | DistilBERT (pretrained, fine-tuned 4 epochs) | 65.2M (~261 MB) | test | 0.947 | 0.966 | **0.956** | 2.3% | 1.9% | 0.40% |
 | DistilBERT | 65.2M | unseen templates | 0.925 | 0.960 | **0.942** | 0.4% | 0.1% | 1.07% |
 | **Hybrid engine** (regex + 2-layer tagger, merged, spans snapped to whole words) | 1.29M | test | 0.875 | 0.935 | **0.904** | 3.7% | 2.1% | 1.20% |
@@ -100,7 +102,12 @@ ALL CAPS and 50 lowercase, so the model had effectively never seen a capitalised
 |---|---|---|---|
 | 2-layer tagger alone | 0.462 | 40.1% | 0.08 |
 | 2-layer hybrid + snap | 0.616 | 27.6% | 0.13 |
-| 4-layer tagger retrained with case augmentation | pending (Colab) | pending | pending |
+| **4-layer tagger retrained with case augmentation** (tagger alone, no snap) | **0.878** | **6.8%** | **0.79** |
+
+Result of the retrain: on ALL-CAPS / lowercase text, left-visible went 40.1% -> 6.8% and PERSON F1 0.12 -> 0.78 (tagger alone,
+no snapping, so the engine on top should do better still). Cost of augmentation: none on `test` (F1 0.910 -> 0.921, same 4 layers,
+no augmentation vs with), small on unseen templates (0.809 -> 0.787 F1, 7.0% -> 7.7% left visible: within the noise of a
+595-row, 5-template set, but worth saying out loud).
 
 Word snapping alone, on the old model and the normal test sets: hybrid test F1 0.862 -> 0.904, left visible 5.3% -> 3.7%,
 unseen F1 0.733 -> 0.821, left visible 15.7% -> 8.5%. Half-word fragments were a large share of all errors.
@@ -126,4 +133,4 @@ Still open: lowercase PAN is missed by regex (case-sensitive pattern).
 - Unseen-template EMAIL is weak for both neural models (0.58 tagger, 0.73 DistilBERT) while regex scores 1.00:
   the case for the hybrid engine (Section 8).
 - Embedding-init bug fixed before the tagger run (the first run, F1 0.21, had it).
-- Still to run: latency benchmark; hybrid numbers with the 4-layer tagger; CRF ablation (optional).
+- Still to run: latency benchmark; hybrid-engine numbers with the 4-layer case-augmented tagger (needs the checkpoint on this laptop); CRF ablation (optional).

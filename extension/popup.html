@@ -8,33 +8,40 @@
 </head>
 <body>
   <h1>PrivyLens <small>runs on your computer only</small></h1>
-  <label class="switch"><input type="checkbox" id="auto" checked> Auto-protect pastes on AI chat sites <span class="hint">(ChatGPT, Claude, Gemini, Copilot, Perplexity)</span></label>
+
+  <label class="switch"><input type="checkbox" id="auto" checked> Clean pastes automatically
+    <span class="hint">on AI chat sites (ChatGPT, Claude, Gemini, Copilot, Perplexity) and sites you add below</span></label>
+  <label class="switch"><input type="checkbox" id="previewOpt"> Ask me before inserting
+    <span class="hint">shows a preview you can edit first</span></label>
+  <button id="site" class="ghost" hidden></button>
+  <p class="hint">Any page: click in a text box and press <b>Alt+Shift+P</b> to clean what you selected (or the whole box).</p>
   <div id="error" class="banner error" hidden></div>
 
-  <label for="input">1. Text to protect <span class="hint">(selected text on the page is filled in for you)</span></label>
-  <textarea id="input" rows="5" placeholder="Paste or select text, then press Sanitise"></textarea>
+  <label for="input">Manual mode: text to protect <span class="hint">(selected text on the page is filled in for you)</span></label>
+  <textarea id="input" rows="4" placeholder="Paste or select text, then press Sanitise"></textarea>
   <div class="row">
     <button id="go" class="primary">Sanitise</button>
     <button id="newSession" class="ghost" title="Forget earlier placeholders and start numbering again">New session</button>
   </div>
 
   <section id="review" hidden>
-    <label>2. Review <span class="hint">click a highlight to keep that value visible. Dashed = the model was unsure</span></label>
+    <label>Review <span class="hint">click a highlight to keep that value visible. Dashed = the model was unsure</span></label>
     <div id="marked" class="box"></div>
     <div id="notes" class="banner" hidden></div>
-    <label for="output">3. Sanitised text</label>
+    <label for="output">Sanitised text</label>
     <textarea id="output" rows="4" readonly></textarea>
     <button id="copy" class="primary">Copy sanitised text</button>
   </section>
 
   <section>
-    <label for="reply">4. Paste the AI's reply to put the real values back</label>
+    <label for="reply">Paste the AI's reply to put the real values back</label>
     <textarea id="reply" rows="3" placeholder="e.g. Dear [PERSON_1], ..."></textarea>
     <button id="restore">Restore</button>
     <textarea id="restored" rows="3" readonly hidden></textarea>
     <button id="copyRestored" class="ghost" hidden>Copy restored text</button>
   </section>
 
+  <script src="shared.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -1,17 +1,13 @@
-// PrivyLens popup. Talks only to the engine on THIS computer (127.0.0.1); nothing goes to the internet.
+// PrivyLens popup: settings, "protect this site", and MANUAL mode (select text -> Sanitise).
+// The automatic modes (paste cleaning, shortcut) live in content.js. Talks only to the engine on THIS computer.
 //
-// This window is the MANUAL mode (select text -> Sanitise). The automatic mode is content.js: it cleans every paste
-// into an AI chat box without opening this window.
 // Use it:  1) start the engine:  python -m uvicorn api.server:app --host 127.0.0.1 --port 8000
 //          2) chrome://extensions -> turn on Developer mode -> Load unpacked -> pick this `extension` folder
-//          3) select text on any page, click the PrivyLens icon, press Sanitise.
+//          3) paste into ChatGPT / Claude, or click in any text box and press Alt+Shift+P.
 const API = "http://127.0.0.1:8000";
 const $ = (id) => document.getElementById(id);
+const inExtension = typeof chrome !== "undefined" && !!chrome.storage;   // false when this page is opened as a plain web page
 let state = null;                       // {chars, spans, blocked} for the text currently under review
-
-// The engine counts characters like Python (code points); JS strings count UTF-16 units.
-// Array.from(text) splits by code points, so offsets from the server line up even with emoji.
-const slice = (chars, a, b) => chars.slice(a, b).join("");
 
 async function post(path, body) {
   const r = await fetch(API + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -34,35 +30,49 @@ async function pageSelection() {        // whatever the user highlighted on the 
   } catch { return ""; }                // not running as an extension, or a page Chrome does not allow reading
 }
 
-function hue(label) {                   // same label -> same colour
-  let h = 0;
-  for (const c of label) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return h;
+// ---------- settings (content.js reads the same values) ----------
+if (inExtension) {
+  chrome.storage.local.get(["enabled", "preview"], (v) => { $("auto").checked = v.enabled !== false; $("previewOpt").checked = v.preview === true; });
+}
+$("auto").onchange = () => inExtension && chrome.storage.local.set({ enabled: $("auto").checked });
+$("previewOpt").onchange = () => inExtension && chrome.storage.local.set({ preview: $("previewOpt").checked });
+
+// ---------- "protect this site": switch on paste cleaning for the site in the current tab ----------
+// Asks Chrome for permission for THIS site only, then registers content.js there. Built-in AI sites are always on.
+async function setupSiteButton() {
+  if (!inExtension || !chrome.permissions) return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let u;
+  try { u = new URL(tab.url); } catch { return; }
+  if (!/^https?:$/.test(u.protocol)) return;
+  const id = "site-" + u.host, pattern = u.origin + "/*", btn = $("site");
+  btn.hidden = false;
+  if (chrome.runtime.getManifest().content_scripts[0].matches.some((m) => m.startsWith(u.origin + "/"))) {
+    btn.textContent = `${u.host}: protected (built in)`;
+    btn.disabled = true;
+    return;
+  }
+  const on = (await chrome.scripting.getRegisteredContentScripts({ ids: [id] })).length > 0;
+  btn.textContent = on ? `Stop protecting ${u.host}` : `Protect pastes on ${u.host}`;
+  btn.onclick = async () => {
+    if (on) {
+      await chrome.scripting.unregisterContentScripts({ ids: [id] });
+      await chrome.permissions.remove({ origins: [pattern] });
+      return setupSiteButton();
+    }
+    if (await chrome.permissions.request({ origins: [pattern] })) {           // must come straight from the click
+      await chrome.scripting.registerContentScripts([{ id, matches: [pattern], js: ["shared.js", "content.js"], runAt: "document_idle" }]);
+      btn.textContent = `Done. Reload ${u.host} to switch it on.`;
+      btn.disabled = true;
+    }
+  };
 }
 
+// ---------- manual mode ----------
 function render() {
   const { chars, spans, blocked } = state;
-  const marked = $("marked"), out = [];
-  marked.textContent = "";
-  let pos = 0;
-  for (const s of spans) {
-    marked.append(slice(chars, pos, s.start));
-    const el = document.createElement("span");          // textContent only: page text is untrusted, never innerHTML
-    el.className = "hl" + (s.flagged ? " flagged" : "") + (s.on ? "" : " off");
-    el.style.setProperty("--h", hue(s.label));
-    el.title = `${s.label} -> ${s.placeholder} (confidence ${s.conf.toFixed(2)}, found by ${s.source}). Click to ${s.on ? "keep visible" : "hide again"}`;
-    el.append(slice(chars, s.start, s.end));
-    const tag = document.createElement("small");
-    tag.textContent = s.label;
-    el.append(tag);
-    el.onclick = () => { s.on = !s.on; render(); };
-    marked.append(el);
-    out.push(slice(chars, pos, s.start), s.on ? s.placeholder : slice(chars, s.start, s.end));
-    pos = s.end;
-  }
-  marked.append(slice(chars, pos));
-  out.push(slice(chars, pos));
-  $("output").value = out.join("");
+  PL.renderMarked($("marked"), chars, spans, render);
+  $("output").value = PL.outputText(chars, spans);
 
   const notes = [];
   if (blocked) notes.push("BLOCKED: structured private data is still visible in the output. Do not share it.");
@@ -83,9 +93,7 @@ $("go").onclick = async () => {
   try {
     const r = await post("/sanitise", { text, session_id: localStorage.getItem("session_id") || null });
     localStorage.setItem("session_id", r.session_id);   // same session = same value keeps the same placeholder
-    const flagged = new Set(r.flagged.map((s) => s.start + ":" + s.end));
-    state = { chars: Array.from(text), blocked: r.blocked,
-              spans: r.spans.map((s) => ({ ...s, on: true, flagged: flagged.has(s.start + ":" + s.end) })) };
+    state = { chars: Array.from(text), blocked: r.blocked, spans: PL.prepare(r) };
     render();
   } catch (e) {
     showError("Cannot reach the PrivyLens engine. Start it with: python -m uvicorn api.server:app --host 127.0.0.1 --port 8000");
@@ -115,9 +123,5 @@ $("restore").onclick = async () => {
 
 $("copyRestored").onclick = () => navigator.clipboard.writeText($("restored").value);
 
-// on/off switch for auto-protect (content.js reads the same setting)
-const hasStorage = typeof chrome !== "undefined" && chrome.storage;
-if (hasStorage) chrome.storage.local.get("enabled", (v) => { $("auto").checked = v.enabled !== false; });
-$("auto").onchange = () => { if (hasStorage) chrome.storage.local.set({ enabled: $("auto").checked }); };
-
+setupSiteButton();
 pageSelection().then((t) => { if (t) $("input").value = t; });

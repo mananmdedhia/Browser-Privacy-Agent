@@ -37,8 +37,8 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [x] `models/encoder_tagger.py` 🖥️
 - [x] loss + warmup-cosine schedule (inside train_tagger.py, no separate files) 🖥️
 - [x] `training/train_tagger.py` — tiny overfit sanity check (10 examples → loss ≈ 0) 🖥️
-- [ ] Full training run + checkpoint to Drive ☁️
-- [ ] Evaluate vs regex (overall, per-entity, unseen templates) 🖥️
+- [x] Full training run + checkpoint to Drive ☁️
+- [x] Evaluate vs regex (overall, per-entity, unseen templates) 🖥️
 - [ ] (optional) CRF layer ☁️
 
 ## 6. Encoder-decoder seq2seq (Week 6)

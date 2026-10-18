@@ -29,9 +29,9 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [x] Train BPE on train split only: 8k done; 4k / 16k later for ablation 🖥️
 
 ## 4. Transformer layers from scratch (Week 4)
-- [ ] `layers/embeddings.py`, `layers/positional.py` (sinusoidal + learned) 🖥️
-- [ ] `layers/attention.py` (scaled dot-product + MHA, padding/causal masks) + `tests/test_attention.py` 🖥️
-- [ ] `layers/feedforward.py`, `layers/encoder_block.py` 🖥️
+- [x] embeddings + positional encoding (sinusoidal + learned), all in `models/layers.py` 🖥️
+- [x] attention in layers.py (scaled dot-product + MHA, padding/causal masks) + `tests/test_attention.py` 🖥️
+- [x] feedforward + encoder block in layers.py 🖥️
 
 ## 5. Encoder tagger — main model (Week 5)
 - [ ] `models/encoder_tagger.py` 🖥️

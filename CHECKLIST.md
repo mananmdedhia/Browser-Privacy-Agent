@@ -45,12 +45,12 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [x] `data/seq2seq_pairs.py` 🖥️
 - [x] decoder block (in layers.py) (masked self-attn + cross-attn) 🖥️
 - [x] `models/seq2seq.py` — teacher forcing, greedy decode (beam as ablation) 🖥️
-- [x] `training/train_seq2seq.py` written + overfit-checked; [ ] full Colab run ☁️
-- [x] `evaluation/preservation.py` written; [ ] error analysis after Colab run + failure-mode error analysis 🖥️
+- [x] `training/train_seq2seq.py` written + overfit-checked; [x] full Colab run ☁️
+- [x] `evaluation/preservation.py` written; [x] numbers + failure modes in reports/results.md (categorised notebook later) 🖥️
 - [ ] (optional) copy/pointer mechanism ☁️
 
 ## 7. DistilBERT reference + ablations (Week 7)
-- [x] `training/train_distilbert.py` written + tested (model wrapper lives in it); [ ] Colab run ☁️
+- [x] `training/train_distilbert.py` written + tested (model wrapper lives in it); [x] Colab run ☁️
 - [ ] Ablations: layers 2/4, heads 2/4/8, pos-enc, vocab size, CRF ☁️
 - [ ] `evaluation/run_benchmark.py` — all approaches → results table 🖥️
 - [ ] `evaluation/latency.py` + params/size 🖥️

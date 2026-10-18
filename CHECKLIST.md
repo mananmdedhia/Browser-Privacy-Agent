@@ -51,7 +51,7 @@ Build one item at a time, top to bottom. Tick when done + tested.
 
 ## 7. DistilBERT reference + ablations (Week 7)
 - [x] `training/train_distilbert.py` written + tested (model wrapper lives in it); [x] Colab run ☁️
-- [x] Ablations: layers 2/4, heads 2/4/8, pos-enc, vocab size, CRF ☁️
+- [x] Ablations: layers 2/4/6, heads 2/4/8, pos-enc, vocab size ☁️ (CRF skipped)
 - [ ] `evaluation/run_benchmark.py` — all approaches → results table 🖥️
 - [ ] `evaluation/latency.py` + params/size 🖥️
 

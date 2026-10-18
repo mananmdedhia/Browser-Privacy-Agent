@@ -67,6 +67,8 @@ For fairness the baseline's val F1 at epoch 15 was 0.860, so the 15-epoch varian
 |---|---|---|---|---|---|---|
 | **Baseline** (2L, 4 heads, sin, 8k) | 1.29M | 0.855 | 5.7% | 0.718 | 15.4% | 0.876 |
 | **4 layers** | 1.56M | **0.887** | **4.3%** | **0.797** | **7.0%** | **0.908** |
+| 4 layers, 25 epochs (same budget as baseline) | 1.56M | 0.910 | 3.8% | 0.809 | 7.0% | 0.930 |
+| 6 layers, 25 epochs | 1.82M | **0.922** | **3.4%** | **0.821** | 8.1% | 0.932 |
 | 2 heads | 1.29M | 0.827 | 7.4% | 0.657 | 27.3% | 0.839 |
 | 8 heads | 1.29M | 0.812 | 7.6% | 0.647 | 24.9% | 0.828 |
 | Learned positions | 1.36M | 0.865 | 5.7% | 0.618 | 17.2% | 0.875 |
@@ -75,6 +77,10 @@ For fairness the baseline's val F1 at epoch 15 was 0.860, so the 15-epoch varian
 
 Findings
 - **Depth is the biggest win:** 4 layers beat 2 on every number (+3.2 F1 on test, +7.9 on unseen, leakage on unseen 15.4% -> 7.0%) for +20% parameters.
+- **Depth, equal 25-epoch budget:** 2 layers 0.855 -> 4 layers 0.910 -> 6 layers 0.922 test F1 (unseen 0.718 -> 0.809 -> 0.821).
+  The jump from 2 to 4 layers (+5.5 F1) is much bigger than from 4 to 6 (+1.2 F1 for +17% params): diminishing returns.
+  Unseen-template leakage is lowest at 4 layers (7.0%) vs 8.1% at 6, so 4 layers is the chosen production size
+  (smaller and faster for the browser, same quality within noise).
 - **Heads:** 4 is best; both 2 and 8 are worse, mostly on unseen templates (d_model=128: 8 heads leaves only 16 dims per head).
 - **Positions:** learned ~ sinusoidal on `test` (0.865 vs 0.855) but clearly worse on unseen templates (0.618 vs 0.718):
   consistent with learned positions memorising template layouts, while fixed sin/cos generalises.

@@ -37,7 +37,15 @@ def merge(spans):
     then the longer span. Loose regex still counts where the model found nothing (recall).
     ponytail: the loser is dropped whole, so a partial overlap can leave a few characters visible;
     widen the winner to the union if the leak metric shows it matters."""
-    rank = lambda s: 2 if s["source"] == "regex" and s["label"] in STRONG else 1 if s["source"] == "model" else 0
+    def rank(s):
+        if s["source"] == "regex" and s["label"] in STRONG: return 2
+        if s["source"] == "model": return 1
+        # loose regex normally ranks last, but if it swallows smaller model spans whole ("Oct 15, 2026" vs the model's
+        # "15" + "2026"), the model only caught pieces of a format the regex recognises: the regex wins
+        # (dates only: phone / Aadhaar / ID patterns over-flag, so letting them win cost precision)
+        swallows = s["label"] == "DATE" and any(m["source"] == "model" and s["start"] <= m["start"] and m["end"] <= s["end"]
+                       and m["end"] - m["start"] < s["end"] - s["start"] for m in spans)
+        return 2 if swallows else 0
     keep = []
     for s in sorted(spans, key=lambda s: (-rank(s), -(s["end"] - s["start"]))):
         if all(s["end"] <= k["start"] or s["start"] >= k["end"] for k in keep):

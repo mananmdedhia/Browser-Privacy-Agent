@@ -11,3 +11,4 @@ fastapi
 uvicorn
 onnx
 onnxruntime
+pymupdf  # PDF redaction (AGPL licence: fine for academic / open-source use)

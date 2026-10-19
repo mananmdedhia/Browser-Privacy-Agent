@@ -10,3 +10,8 @@ def test_structured():
 
 def test_no_false_positive():
     assert detect("Meet me at 5 pm, room 12.") == []
+
+
+def test_written_out_dates():
+    f = found("Issued Oct 15, 2026 and 15th October 2026 and 3 Sept 2025 but not May 12.")
+    assert f == {"Oct 15, 2026": "DATE", "15th October 2026": "DATE", "3 Sept 2025": "DATE"}

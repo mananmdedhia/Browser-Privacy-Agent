@@ -7,3 +7,5 @@ data/splits/
 checkpoints/
 .venv/
 data/synthetic/
+pdf/
+pdf_out/

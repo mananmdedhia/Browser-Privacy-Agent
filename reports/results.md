@@ -7,7 +7,7 @@ Data: ai4privacy (English) + our synthetic Indian data. See `CHECKLIST.md` for h
 
 | Model | Params | Split | Precision | Recall | F1 | Leaked spans | Leaked chars | Over-redaction |
 |---|---|---|---|---|---|---|---|---|
-| Regex baseline | - | test | 0.723 | 0.229 | 0.348 | 71.6% | 59.2% | 0.56% |
+| Regex baseline (after adding written-out date formats, see PDF section) | - | test | 0.743 | 0.258 | 0.383 | 68.7% | 55.1% | 0.61% |
 | Regex baseline | - | unseen templates | 1.000 | 0.485 | 0.653 | 51.5% | 46.4% | 0.00% |
 | **Encoder tagger** (from scratch, 25 epochs) | 1.29M | test | 0.815 | 0.899 | **0.855** | 5.7% | 3.0% | 0.77% |
 | **Encoder tagger** | 1.29M | unseen templates | 0.674 | 0.768 | **0.718** | 15.4% | 6.3% | 3.19% |
@@ -15,7 +15,7 @@ Data: ai4privacy (English) + our synthetic Indian data. See `CHECKLIST.md` for h
 | **Encoder tagger, 4 layers + case augmentation** | 1.56M | unseen templates | 0.776 | 0.798 | **0.787** | 7.7% | 4.3% | 2.34% |
 | DistilBERT (pretrained, fine-tuned 4 epochs) | 65.2M (~261 MB) | test | 0.947 | 0.966 | **0.956** | 2.3% | 1.9% | 0.40% |
 | DistilBERT | 65.2M | unseen templates | 0.925 | 0.960 | **0.942** | 0.4% | 0.1% | 1.07% |
-| **HYBRID ENGINE, PRODUCTION** (regex + 4-layer case-augmented tagger, snapped to whole words) | 1.56M | test | 0.915 | 0.952 | **0.933** | **2.8%** | 2.1% | 0.96% |
+| **HYBRID ENGINE, PRODUCTION** (regex + 4-layer case-augmented tagger, snapped to whole words) | 1.56M | test | 0.915 | 0.952 | **0.933** | **2.7%** | 2.1% | 0.98% |
 | **HYBRID ENGINE, PRODUCTION** | 1.56M | unseen templates | 0.876 | 0.882 | **0.879** | **5.4%** | 3.1% | 1.32% |
 | **HYBRID ENGINE, PRODUCTION** | 1.56M | all-caps / lowercase (`test_caps`) | 0.893 | 0.920 | **0.906** | **4.9%** | 3.6% | 1.02% |
 | Hybrid engine (older: regex + 2-layer tagger, snapped to whole words) | 1.29M | test | 0.875 | 0.935 | **0.904** | 3.7% | 2.1% | 1.20% |
@@ -33,7 +33,7 @@ and about 22 on unseen templates, but beats regex by a wide margin on both.
 | ORGANIZATION | 0.00 | 0.98 | 1.00 |
 | EMAIL | 0.98 | 0.87 | 0.97 |
 | PHONE | 0.51 | 0.80 | 0.93 |
-| DATE | 0.58 | 0.91 | 0.96 |
+| DATE | 0.80 (was 0.58 before date-format fix) | 0.91 | 0.96 |
 | ID_NUMBER | 0.12 | 0.82 | 0.95 |
 | IP_ADDRESS | 0.90 | 0.84 | 0.97 |
 | AADHAAR | 0.44 | 0.99 | 1.00 |
@@ -128,6 +128,25 @@ Still wrong (be ready to show these honestly):
   that score mostly measures template familiarity (see notes below).
 - The 12-digit Aadhaar number is hidden but labelled `[ID_NUMBER_1]`, because the model's label outranks loose regex.
 ONNX re-exported for the production model (max difference from PyTorch 9.7e-06).
+
+## PDF redaction (Section 11, first version)
+
+`python -m privylens.docs.pdf [files] [--keep words] [--hide words]`: reads each page's text and word positions, runs the
+engine, draws labelled black boxes, and DELETES the text underneath (true redaction); also removes links that point at hidden
+text, scrubs document metadata, sweeps the whole document for other occurrences of every detected value, then re-reads the
+output file and lists any detected word still visible. Output: redacted PDF, report JSON, vault JSON (real values, local only).
+
+Tried on 3 real Coursera certificates (text PDFs, 1 page each; not committed, `pdf/` is git-ignored): the name, the date and
+the verification URL are removed from the file's text layer, nothing detected survives, no link leaks.
+Honest findings from them:
+- The model has not seen headings or Title Case phrases: `Fundamentals`, `Big`, `Azure`, `Microsoft`, `Coursera` were hidden as
+  PERSON (11 boxes vs 4 actually private). Workaround shipped: `--keep` / `--hide`. Real fix (not done): train on headings /
+  Title Case non-names, and add CoNLL-2003 (headlines, ORG/LOC).
+- Date format `Oct 15, 2026` was in neither our regex nor our synthetic data: found by the PDFs, fixed in regex
+  (regex test F1 0.348 -> 0.383). The synthetic generator should get these formats at the next retrain.
+- Reading order matters: grouping words by their position on the page (not the PDF's internal line numbers) fixed names being
+  split in two. Multi-column layouts and scanned PDFs (no text layer, needs OCR) are not handled.
+- A loose regex DATE that swallows smaller model fragments now wins the merge (dates only; doing it for phone/Aadhaar cost precision).
 
 ## Hybrid engine notes
 

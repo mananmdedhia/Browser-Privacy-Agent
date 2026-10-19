@@ -70,3 +70,12 @@ Build one item at a time, top to bottom. Tick when done + tested.
 - [ ] `evaluation/attention_viz.py` + attention notebook 🖥️
 - [ ] Results + plots notebook, `reports/results.md` 🖥️
 - [ ] README, report, presentation 🖥️
+
+## 11. PDF redaction
+- [x] `docs/pdf.py`: text + word boxes, engine per page, true redaction, link removal, metadata scrub, document sweep, verification 🖥️
+- [x] `--keep` / `--hide` controls; `tests/test_pdf.py` 🖥️
+- [ ] Synthetic-PDF evaluation (known values -> survival rate) 🖥️
+- [ ] Alias linking ("Mr. Sharma" = "Rahul Sharma") 🖥️
+- [ ] Review web page (toggle boxes, download) 🖥️
+- [ ] Retrain with headings / Title Case negatives, written-out date formats, CoNLL-2003 ☁️
+- [ ] Scanned PDFs (OCR) 🖥️

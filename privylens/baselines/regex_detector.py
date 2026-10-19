@@ -3,7 +3,7 @@ Cannot find PERSON / ORGANIZATION / LOCATION (needs understanding, not patterns)
 that gap is part of the project's finding."""
 import re
 
-MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December|Sept|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
 
 # (label, pattern, optional extra check). Earlier entries win when matches overlap.
 PATTERNS = [
@@ -12,7 +12,9 @@ PATTERNS = [
     ("IP_ADDRESS", r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.]*\d)|(?<![\w:])(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}(?![\w:])", None),
     ("PAN", r"\b[A-Z]{5}\d{4}[A-Z]\b", None),                      # AAAAA9999A
     ("AADHAAR", r"(?<!\d)[2-9]\d{3}\s?\d{4}\s?\d{4}(?!\d)", None),   # 12 digits, optional grouping
-    ("DATE", rf"\b\d{{1,2}}[/-]\d{{1,2}}[/-]\d{{2,4}}\b|\b\d{{4}}-\d{{2}}-\d{{2}}\b|\b\d{{1,2}} (?:{MONTHS}) \d{{4}}\b", None),
+    ("DATE", rf"\b\d{{1,2}}[/-]\d{{1,2}}[/-]\d{{2,4}}\b|\b\d{{4}}-\d{{2}}-\d{{2}}\b"
+             rf"|\b\d{{1,2}}(?:st|nd|rd|th)? (?:{MONTHS})\.?,? \d{{4}}\b"          # 15 October 2026, 15th Oct 2026
+             rf"|\b(?:{MONTHS})\.? \d{{1,2}}(?:st|nd|rd|th)?,? \d{{4}}\b", None),  # Oct 15, 2026
     ("ID_NUMBER", r"\b(?:EMP|CASE|ACC|INV)\d{4,6}\b|\b[A-Z]{1,3}\d{6,14}\b", None),
     # phone: digits with spaces/dashes/brackets, 10-13 digits in total
     ("PHONE", r"(?<![\w.])\+?\d[\d\s().-]{8,}\d(?!\w)", lambda s: 10 <= sum(c.isdigit() for c in s) <= 13),

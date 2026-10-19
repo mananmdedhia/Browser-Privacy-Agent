@@ -76,9 +76,11 @@ def redact_pdf(src, dst, engine, keep=(), hide=()):
     keep_l = {w.lower() for k in keep for w in k.split()}          # matched word by word
 
     # ---- phase 1: detect on every page (one session = consistent placeholders across pages) ----
-    sid, pages, values = None, [], {}               # values: original text -> (placeholder, label)
+    sid, pages, values, blind = None, [], {}, []    # values: original text -> (placeholder, label); blind: pages without text
     for page in doc:
         text, words = page_words(page)
+        if not text.strip():
+            blind.append(page.number + 1)            # no text layer (scan / picture): nothing can be detected here
         r = engine.sanitise(text, sid) if text.strip() else {"spans": [], "flagged": [], "session_id": sid}
         sid = r["session_id"]
         flagged = {(s["start"], s["end"]) for s in r["flagged"]}
@@ -138,6 +140,7 @@ def redact_pdf(src, dst, engine, keep=(), hide=()):
     return {"file": os.path.basename(src), "pages": len(pages), "redactions": hits,
             "counts": {l: sum(h["label"] == l for h in hits) for l in sorted({h["label"] for h in hits})},
             "still_visible_words": survivors, "links_still_containing_hidden_text": link_leaks,
+            "pages_without_text_NOT_REDACTED": blind,
             "low_confidence_boxes": sum(h["low_confidence"] for h in hits)}, \
         {ph: v for ph, v in {**engine.sessions.get(sid, {}), **custom}.items() if ph in {h["placeholder"] for h in hits}}   # only placeholders actually used
 
@@ -157,5 +160,8 @@ if __name__ == "__main__":
         json.dump(report, open(f"pdf_out/{name}.report.json", "w", encoding="utf-8"), indent=1)
         json.dump(vault, open(f"pdf_out/{name}.vault.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)  # SENSITIVE: real values
         print(f"{report['file']}: {len(report['redactions'])} boxes {report['counts']}")
+        if report["pages_without_text_NOT_REDACTED"]:
+            print(f"   WARNING: pages {report['pages_without_text_NOT_REDACTED']} have no text layer (scanned image). "
+                  "NOTHING was redacted there; this file is NOT safe to share (OCR needed).")
         print(f"   still visible: {report['still_visible_words'] or 'nothing'} | links leaking: {report['links_still_containing_hidden_text'] or 'none'}"
               f" | low-confidence boxes: {report['low_confidence_boxes']}")

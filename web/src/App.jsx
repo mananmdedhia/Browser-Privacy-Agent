@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import Compare from "./Compare.jsx";
 import Docs from "./Docs.jsx";
+import LiveView from "./LiveView.jsx";
 import Teach from "./Teach.jsx";
 
-const PAGES = { "#/compare": Compare, "#/docs": Docs, "#/teach": Teach };
-const LINKS = [["#/compare", "Compare"], ["#/docs", "Docs"], ["#/teach", "Teach"]];
+const PAGES = { "#/compare": Compare, "#/live": LiveView, "#/docs": Docs, "#/teach": Teach };
+const LINKS = [["#/compare", "Compare"], ["#/live", "Live view"], ["#/docs", "Docs"], ["#/teach", "Teach"]];
 
 // Sentence for the lens demo: [text] is public, [text, label] is private.
 const SAMPLE = [["Send the report to "], ["Rahul Sharma", "PERSON_1"], [" at "], ["rahul@example.com", "EMAIL_1"], [". His employee ID is "], ["ZX-48213-K", "ID_NUMBER_1"], ["."]];
@@ -104,7 +105,7 @@ export default function App() {
   const Page = PAGES[hash] || Home;
   return (
     <>
-      <nav className="glass fixed left-1/2 top-4 z-20 flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 items-center justify-between rounded-full py-2 pl-5 pr-2" aria-label="Main">
+      <nav className="glass fixed left-1/2 top-4 z-20 flex w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 items-center justify-between rounded-full py-2 pl-5 pr-2" aria-label="Main">
         <a href="#/" className="font-display text-xl">PrivyLens</a>
         <div className="flex gap-1">
           {LINKS.map(([h, label]) => (

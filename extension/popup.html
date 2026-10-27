@@ -41,6 +41,15 @@
     <button id="copyRestored" class="ghost" hidden>Copy restored text</button>
   </section>
 
+  <section>
+    <label for="catName">Teach PrivyLens a new secret <span class="hint">e.g. your company's employee ID. Give 1-10 examples, one per line. Adding the words around it helps: <code>Staff code: [[ORX-72841]]</code></span></label>
+    <input id="catName" placeholder="Name, e.g. Employee ID">
+    <textarea id="catExamples" rows="3" placeholder="ORX-72841&#10;Staff code: [[ORX-10442]]"></textarea>
+    <textarea id="catNot" rows="2" placeholder="Optional: look-alikes that are NOT secret, e.g. Order [[ORD-55120]]"></textarea>
+    <button id="catAdd">Learn it</button>
+    <div id="catMsg" class="hint"></div>
+  </section>
+
   <script src="shared.js"></script>
   <script src="popup.js"></script>
 </body>

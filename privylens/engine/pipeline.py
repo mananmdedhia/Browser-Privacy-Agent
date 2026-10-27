@@ -33,11 +33,12 @@ STRONG = {"EMAIL", "URL", "IP_ADDRESS", "PAN"}      # formats regex gets (almost
 
 def merge(spans):
     """Pick non-overlapping spans. Priority when two overlap:
-       1. precise regex (STRONG types)   2. the neural tagger   3. loose regex (phone, Aadhaar, date, ID)
+       0. user-defined categories (few-shot)   1. precise regex (STRONG types)   2. the neural tagger   3. loose regex (phone, Aadhaar, date, ID)
     then the longer span. Loose regex still counts where the model found nothing (recall).
     ponytail: the loser is dropped whole, so a partial overlap can leave a few characters visible;
     widen the winner to the union if the leak metric shows it matters."""
     def rank(s):
+        if s["source"] == "custom": return 3                    # a category the user defined themselves always wins
         if s["source"] == "regex" and s["label"] in STRONG: return 2
         if s["source"] == "model": return 1
         # loose regex normally ranks last, but if it swallows smaller model spans whole ("Oct 15, 2026" vs the model's
@@ -73,6 +74,7 @@ class Engine:
     def __init__(self, model_spans=None, threshold=0.8):
         """model_spans: function text -> spans from the neural tagger (None = regex only)."""
         self.model_spans, self.threshold = model_spans, threshold
+        self.custom, self.fewshot, self.fewshot_words = {}, None, None                 # user-defined categories: label -> detector, built from a few examples
         self.sessions = {}                                   # session_id -> {placeholder: original}  (memory only, never sent anywhere)
 
     @classmethod
@@ -83,10 +85,39 @@ class Engine:
         tok = BPE.load(tokenizer_path or model.tokenizer_path)      # the tokenizer this model was trained with
         return cls(lambda t: predict(model, tok, t), **kw)
 
-    def detect(self, text):
+    def add_category(self, name, examples, not_examples=()):
+        """Teach a new kind of secret from a few examples. Best: a sentence with the secret in double brackets,
+        "Staff code: [[ORX-72841]]" or "[[Nightfall]] is the internal codename for the launch". No training happens; see privylens/fewshot.
+        IDs (contain a digit) go to the ID model, capitalised names to the name model (needs a bracketed sentence), and every
+        example is also matched literally. Needs checkpoints/fewshot.pt and fewshot_words.pt (python -m privylens.fewshot.run / .words)."""
+        from privylens.fewshot.model import detector, load, parse_example, phrase_detector
+        from privylens.fewshot.words import tokens, word_detector
+        label = re.sub(r"[^A-Z]+", "_", name.upper()).strip("_") or "CUSTOM"        # placeholders look like [LABEL_1]
+        pos, neg = [parse_example(e) for e in examples], [parse_example(e) for e in not_examples]
+        has_digit = lambda x: any(c.isdigit() for c in x[0][x[1]:x[2]])
+        txt = lambda x: x[0][x[1]:x[2]]
+        ids = [x for x in pos if has_digit(x)]
+        words = [x for x in pos if not has_digit(x)]
+        dets = []
+        if ids:
+            self.fewshot = self.fewshot or load()
+            dets.append(detector(self.fewshot, ids, [x for x in neg if has_digit(x)], label=label))
+        sentenced = [x for x in words if x[0] != txt(x)]                              # only examples with a sentence around them teach the model
+        if sentenced:
+            self.fewshot_words = self.fewshot_words or load("checkpoints/fewshot_words.pt")
+            dets.append(word_detector(self.fewshot_words, tokens(sentenced), tokens([x for x in neg if not has_digit(x)]), label=label))
+        if words:
+            dets.append(phrase_detector([txt(x) for x in words], [txt(x) for x in neg if not has_digit(x)], label))
+        self.custom[label] = lambda t: [s for d in dets for s in d(t)]
+        return label
+
+    def detect(self, text, model=True, custom=True):
+        """model / custom = False switch off the neural tagger / the user's categories (used to compare against plain NER)."""
         found = [{**s, "conf": 1.0, "source": "regex"} for s in regex_detect(text)]
-        if self.model_spans:
+        if self.model_spans and model:
             found += [{**s, "source": "model"} for s in snap(text, self.model_spans(text))]
+        for d in (self.custom.values() if custom else ()):
+            found += [{**s, "source": "custom"} for s in d(text)]
         return merge(found)
 
     def sanitise(self, text, session_id=None):

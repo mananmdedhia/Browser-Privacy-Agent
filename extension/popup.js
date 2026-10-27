@@ -125,3 +125,14 @@ $("copyRestored").onclick = () => navigator.clipboard.writeText($("restored").va
 
 setupSiteButton();
 pageSelection().then((t) => { if (t) $("input").value = t; });
+
+// ---------- teach a new secret type from a few examples (few-shot; the engine learns nothing permanent but remembers the examples) ----------
+$("catAdd").onclick = async () => {
+  const lines = (id) => $(id).value.split("\n").map((l) => l.trim()).filter(Boolean);
+  try {
+    const r = await post("/categories", { name: $("catName").value.trim() || "Custom", examples: lines("catExamples"), not_examples: lines("catNot") });
+    $("catMsg").textContent = `Learned [${r.label}_n] from ${r.examples} example(s). It is now hidden in every text you clean.`;
+  } catch (e) {
+    $("catMsg").textContent = "Could not add it (engine running? at least one example? few-shot model trained?).";
+  }
+};

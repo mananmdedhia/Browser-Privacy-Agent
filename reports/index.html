@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrivyLens research</title>
+<style>
+:root{--bg:#fff;--fg:#000;--mute:#666;--rule:#000}
+@media (prefers-color-scheme:dark){:root{--bg:#000;--fg:#fff;--mute:#999;--rule:#fff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.6 "Iowan Old Style",Palatino,"Palatino Linotype",Georgia,serif}
+main{max-width:46rem;margin:0 auto;padding:0 16px 6rem}
+h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.15;font-weight:400;margin:22vh 0 1.5rem;letter-spacing:-.01em}
+h2{font-size:1.5rem;font-weight:400;margin:5rem 0 .5rem;padding-top:.75rem;border-top:2px solid var(--rule)}
+p{max-width:38rem;margin:.75rem 0}
+.mute{color:var(--mute)}
+.redact{all:unset;cursor:pointer;background:var(--fg);color:var(--fg);padding:0 .15em;transition:color .2s}
+.redact[aria-pressed=true]{color:var(--bg)}
+.redact:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums;margin:1.25rem 0}
+th,td{text-align:left;padding:.45rem .5rem .45rem 0;border-bottom:1px solid var(--rule);vertical-align:middle}
+th{font-weight:400;color:var(--mute)}
+td.n{text-align:right;padding-right:1rem}
+.bar{display:inline-block;height:.6rem;background:var(--fg);vertical-align:middle}
+tr.pick td{font-weight:700}
+.scroll{overflow-x:auto}
+ul{padding-left:1.1rem;max-width:38rem}li{margin:.4rem 0}
+img{max-width:100%;border:1px solid var(--rule);margin:1rem 0;background:#fff}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Send the report to
+<button class="redact" aria-pressed="false" aria-label="Toggle hidden name">Rahul Sharma</button>
+at <button class="redact" aria-pressed="false" aria-label="Toggle hidden email">rahul@example.com</button>.</h1>
+<p>PrivyLens hides personal details in text before it leaves your browser. Click a black bar to see what it covers.
+The production engine leaves <strong>2.7%</strong> of private values visible on held-out data, and <strong>5.4%</strong> on sentence shapes it never trained on.</p>
+
+<h2>How the engine was chosen</h2>
+<p>A regex pass catches fixed formats (email, URL, IP, PAN). A small neural tagger, 1.56M parameters and 5.5 MB in the browser, catches names and places. Results use exact-match spans. Leaked means private text left visible, so lower is better.</p>
+<div class="scroll"><table>
+<tr><th>Model</th><th class="n">Size</th><th class="n">F1 test</th><th class="n">F1 unseen</th><th>Leaked on unseen</th></tr>
+<tr><td>Regex only</td><td class="n">none</td><td class="n">0.383</td><td class="n">0.653</td><td><span class="bar" style="width:51.5%"></span> 51.5%</td></tr>
+<tr><td>Tagger, 2 layers</td><td class="n">1.29M</td><td class="n">0.855</td><td class="n">0.718</td><td><span class="bar" style="width:15.4%"></span> 15.4%</td></tr>
+<tr><td>Tagger, 4 layers + case augmentation</td><td class="n">1.56M</td><td class="n">0.921</td><td class="n">0.787</td><td><span class="bar" style="width:7.7%"></span> 7.7%</td></tr>
+<tr class="pick"><td>Hybrid engine (shipped)</td><td class="n">1.56M</td><td class="n">0.933</td><td class="n">0.879</td><td><span class="bar" style="width:5.4%"></span> 5.4%</td></tr>
+<tr><td>DistilBERT (reference)</td><td class="n">65.2M</td><td class="n">0.956</td><td class="n">0.942</td><td><span class="bar" style="width:.4%"></span> 0.4%</td></tr>
+</table></div>
+<p>DistilBERT is 40 times larger and about 260 MB. The shipped engine gives up a few points of accuracy to run inside the page.</p>
+<img src="figures/improvement_timeline.png" alt="F1 and leakage after each change">
+
+<h2>Tagging beat generating</h2>
+<p>We also trained a model that writes the cleaned text directly. Only 23% of its outputs were exactly right. It duplicated words, corrupted ordinary words, copied half of an email instead of hiding it, and broke down on new sentence shapes. A tagger marks spans and cannot alter the text, so it was the safer design.</p>
+
+<h2>What changed the numbers</h2>
+<ul>
+<li><strong>Depth:</strong> 2 to 4 layers added 5.5 F1 points for 20% more parameters. 4 to 6 added 1.2 more, so we stopped at 4.</li>
+<li><strong>Position encoding:</strong> learned positions matched fixed ones on familiar templates (0.865 vs 0.855) but dropped to 0.618 vs 0.718 on unseen ones.</li>
+<li><strong>Vocabulary:</strong> 4k words matched 8k with 40% fewer parameters. 16k was worse.</li>
+<li><strong>ALL-CAPS names:</strong> a real user's ALL-CAPS name went undetected. Adding upper and lower case copies of the training data cut visible text on such input from 40.1% to 6.8%.</li>
+<li><strong>Whole words:</strong> widening matches to full words raised hybrid F1 from 0.862 to 0.904. Half-word fragments were a large share of errors.</li>
+</ul>
+<p class="mute">Ablations are single runs. The unseen set has 595 rows from 5 templates, so trust the trends, not the decimals.</p>
+
+<h2>New ID formats from one example</h2>
+<p>Companies use their own employee ID formats. We tested 15 unseen companies, giving each one example (K=1) of its ID format.</p>
+<div class="scroll"><table>
+<tr><th>Method</th><th class="n">F1</th><th class="n">Missed IDs</th><th class="n">False redaction</th></tr>
+<tr><td>Existing tagger, no examples</td><td class="n">0.454</td><td class="n">27.6%</td><td class="n">9.9%</td></tr>
+<tr><td>Fine-tune</td><td class="n">0.747</td><td class="n">36.4%</td><td class="n">0.0%</td></tr>
+<tr><td>Few-shot, shape + context</td><td class="n">0.957</td><td class="n">5.2%</td><td class="n">0.4%</td></tr>
+<tr class="pick"><td>Regex built from the examples</td><td class="n">0.989</td><td class="n">0.0%</td><td class="n">0.2%</td></tr>
+</table></div>
+<p>The plain regex built from the examples wins here. Few-shot matching is the closest learned method, and fine-tuning needs about 10 examples to catch up.</p>
+
+<h2>Where it still fails</h2>
+<ul>
+<li>Lowercase place names stay visible, so <em>mumbai</em> leaks.</li>
+<li>Common words are sometimes hidden: <em>Mail me at</em> becomes <em>[PERSON_1] me</em>. This over-redacts but does not leak.</li>
+<li>Headings in PDFs (<em>Microsoft</em>, <em>Coursera</em>) are mistaken for names. <code>--keep</code> and <code>--hide</code> work around it.</li>
+<li>Scanned PDFs have no text layer, and PrivyLens warns that nothing was redacted.</li>
+<li>Scores on organizations, PAN and URLs partly reflect template familiarity. Use the unseen-template column as the honest number.</li>
+</ul>
+
+</main>
+<script>
+document.querySelectorAll('.redact').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'))
+</script>
+</body>
+</html>
